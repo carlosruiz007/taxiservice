@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { site } from '../config/site';
 
 function Header() {
   return (
@@ -32,7 +33,7 @@ function Header() {
           }}>
             🚕
           </div>
-          <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111' }}>TaxiGo</span>
+          <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111' }}>{site.name}</span>
         </Link>
 
         {/* Navigation */}
