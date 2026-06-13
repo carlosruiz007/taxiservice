@@ -1,7 +1,12 @@
 {
-  "name": "taxiservice",
+  "name": "ridewithcarlos",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Ride With Carlos taxi service website with Netlify Forms booking",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/carlosruiz007/taxiservice.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

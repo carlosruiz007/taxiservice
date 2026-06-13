@@ -1,15 +1,81 @@
 import React, { useEffect, useState } from 'react';
+import { site, siteLinks } from '../config/site';
+
+const BOOKING_FORM_NAME = 'booking';
+
+const initialBookingForm = {
+  pickup: '',
+  dropoff: '',
+  date: '',
+  time: '',
+  phone: '',
+};
 
 function Home() {
   const [viewportWidth, setViewportWidth] = useState(
     typeof window === 'undefined' ? 1280 : window.innerWidth
   );
+  const [bookingForm, setBookingForm] = useState(initialBookingForm);
+  const [bookingStatus, setBookingStatus] = useState('idle');
+  const [bookingError, setBookingError] = useState('');
 
   useEffect(() => {
     const handleResize = () => setViewportWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const handleBookingChange = (event) => {
+    const { name, value } = event.target;
+    setBookingForm((current) => ({ ...current, [name]: value }));
+    if (bookingStatus === 'error') {
+      setBookingStatus('idle');
+      setBookingError('');
+    }
+  };
+
+  const handleBookingSubmit = async (event) => {
+    event.preventDefault();
+
+    const trimmedPickup = bookingForm.pickup.trim();
+    const trimmedDropoff = bookingForm.dropoff.trim();
+    const trimmedPhone = bookingForm.phone.trim();
+
+    if (!trimmedPickup || !trimmedDropoff || !bookingForm.date || !bookingForm.time || !trimmedPhone) {
+      setBookingStatus('error');
+      setBookingError('Please fill in all fields.');
+      return;
+    }
+
+    if (!import.meta.env.PROD) {
+      setBookingStatus('error');
+      setBookingError('Form submissions are handled on Netlify after you deploy.');
+      return;
+    }
+
+    setBookingStatus('loading');
+    setBookingError('');
+
+    const formData = new FormData(event.target);
+
+    try {
+      const response = await fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(formData).toString(),
+      });
+
+      if (!response.ok) {
+        throw new Error('Submission failed');
+      }
+
+      setBookingForm(initialBookingForm);
+      setBookingStatus('success');
+    } catch {
+      setBookingStatus('error');
+      setBookingError('Could not save your booking. Please call us instead.');
+    }
+  };
 
   const isMobile = viewportWidth < 768;
   const isTablet = viewportWidth >= 768 && viewportWidth < 1024;
@@ -31,7 +97,7 @@ function Home() {
         right: 0,
         zIndex: 100
       }}>
-        <img src="/logo.png" alt="Ride With Carlos" style={{ height: isMobile ? '52px' : '70px', alignSelf: isMobile ? 'flex-start' : 'auto' }} />
+        <img src="/logo.png" alt={site.name} style={{ height: isMobile ? '52px' : '70px', alignSelf: isMobile ? 'flex-start' : 'auto' }} />
         <nav style={{ display: 'flex', gap: isMobile ? '1rem' : '2.5rem', fontSize: '0.9rem', flexWrap: 'wrap' }}>
           <a href="#top" style={{ color: 'white', textDecoration: 'none' }}>Home</a>
           <a href="#services" style={{ color: 'white', textDecoration: 'none' }}>Services</a>
@@ -39,7 +105,7 @@ function Home() {
           <a href="#about" style={{ color: 'white', textDecoration: 'none' }}>About</a>
           <a href="#contact" style={{ color: 'white', textDecoration: 'none' }}>Contact</a>
         </nav>
-        <a href="tel:+15551234567" style={{
+        <a href={siteLinks.phone} style={{
           backgroundColor: '#FFC107',
           color: '#0a0a0a',
           padding: '0.75rem 1.5rem',
@@ -91,7 +157,7 @@ function Home() {
               Airport transfers, home pickups, group trips, and long-distance rides — always safe, comfortable, and on schedule.
             </p>
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
-              <a href="tel:+15551234567" style={{
+              <a href={siteLinks.phone} style={{
                 backgroundColor: '#FFC107',
                 color: '#0a0a0a',
                 padding: '1rem 2rem',
@@ -104,20 +170,6 @@ function Home() {
                 display: 'inline-block'
               }}>
                 📞 Call Now
-              </a>
-              <a href="https://wa.me/15551234567" target="_blank" rel="noopener noreferrer" style={{
-                backgroundColor: '#25D366',
-                color: 'white',
-                padding: '1rem 2rem',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '1rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                textDecoration: 'none',
-                display: 'inline-block'
-              }}>
-                💬 WhatsApp
               </a>
             </div>
           </div>
@@ -137,10 +189,27 @@ function Home() {
             }}>
               Book Your Ride
             </h3>
-            <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form
+              name={BOOKING_FORM_NAME}
+              method="POST"
+              data-netlify="true"
+              data-netlify-honeypot="bot-field"
+              onSubmit={handleBookingSubmit}
+              style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+            >
+              <input type="hidden" name="form-name" value={BOOKING_FORM_NAME} />
+              <p hidden>
+                <label>
+                  Do not fill this out: <input name="bot-field" />
+                </label>
+              </p>
               <input
                 type="text"
+                name="pickup"
+                value={bookingForm.pickup}
+                onChange={handleBookingChange}
                 placeholder="Pickup Location"
+                required
                 style={{
                   padding: '1rem',
                   border: '1px solid #ddd',
@@ -150,7 +219,11 @@ function Home() {
               />
               <input
                 type="text"
+                name="dropoff"
+                value={bookingForm.dropoff}
+                onChange={handleBookingChange}
                 placeholder="Drop-off Location"
+                required
                 style={{
                   padding: '1rem',
                   border: '1px solid #ddd',
@@ -161,6 +234,10 @@ function Home() {
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                 <input
                   type="date"
+                  name="date"
+                  value={bookingForm.date}
+                  onChange={handleBookingChange}
+                  required
                   style={{
                     padding: '1rem',
                     border: '1px solid #ddd',
@@ -170,6 +247,10 @@ function Home() {
                 />
                 <input
                   type="time"
+                  name="time"
+                  value={bookingForm.time}
+                  onChange={handleBookingChange}
+                  required
                   style={{
                     padding: '1rem',
                     border: '1px solid #ddd',
@@ -180,7 +261,11 @@ function Home() {
               </div>
               <input
                 type="tel"
+                name="phone"
+                value={bookingForm.phone}
+                onChange={handleBookingChange}
                 placeholder="Phone Number"
+                required
                 style={{
                   padding: '1rem',
                   border: '1px solid #ddd',
@@ -188,20 +273,32 @@ function Home() {
                   fontSize: '1rem'
                 }}
               />
+              {bookingStatus === 'success' && (
+                <p style={{ margin: 0, color: '#166534', fontSize: '0.95rem', lineHeight: 1.5 }}>
+                  Booking received. We will contact you shortly to confirm your ride.
+                </p>
+              )}
+              {bookingStatus === 'error' && bookingError && (
+                <p style={{ margin: 0, color: '#b91c1c', fontSize: '0.95rem', lineHeight: 1.5 }}>
+                  {bookingError}
+                </p>
+              )}
               <button
                 type="submit"
+                disabled={bookingStatus === 'loading'}
                 style={{
-                  backgroundColor: '#FFC107',
+                  backgroundColor: bookingStatus === 'loading' ? '#e6b800' : '#FFC107',
                   color: '#0a0a0a',
                   padding: '1.2rem',
                   border: 'none',
                   borderRadius: '6px',
                   fontSize: '1.1rem',
                   fontWeight: '700',
-                  cursor: 'pointer'
+                  cursor: bookingStatus === 'loading' ? 'wait' : 'pointer',
+                  opacity: bookingStatus === 'loading' ? 0.8 : 1
                 }}
               >
-                Book Now
+                {bookingStatus === 'loading' ? 'Sending...' : 'Book Now'}
               </button>
             </form>
           </div>
@@ -450,10 +547,10 @@ function Home() {
           opacity: 0.9,
           marginBottom: '2.5rem'
         }}>
-          Book your ride today - call or text us now
+          Book your ride today - call us now
         </p>
         <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href="tel:+15551234567" style={{
+          <a href={siteLinks.phone} style={{
             backgroundColor: '#FFC107',
             color: '#0a0a0a',
             padding: isMobile ? '1rem 1.5rem' : '1.2rem 3rem',
@@ -465,21 +562,7 @@ function Home() {
             textDecoration: 'none',
             display: 'inline-block'
           }}>
-            📞 Call: (555) 123-4567
-          </a>
-          <a href="https://wa.me/15551234567" target="_blank" rel="noopener noreferrer" style={{
-            backgroundColor: '#25D366',
-            color: 'white',
-            padding: isMobile ? '1rem 1.5rem' : '1.2rem 3rem',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: isMobile ? '1rem' : '1.1rem',
-            fontWeight: '700',
-            cursor: 'pointer',
-            textDecoration: 'none',
-            display: 'inline-block'
-          }}>
-            💬 WhatsApp Us
+            📞 Call: {site.phone.display}
           </a>
         </div>
       </section>
@@ -499,7 +582,7 @@ function Home() {
           marginBottom: '3rem'
         }}>
           <div>
-            <img src="/logo.png" alt="Ride With Carlos" style={{ height: '60px', marginBottom: '1rem' }} />
+            <img src="/logo.png" alt={site.name} style={{ height: '60px', marginBottom: '1rem' }} />
             <p style={{ fontSize: '0.9rem', opacity: 0.7, lineHeight: '1.6' }}>
               Reliable, safe, and friendly taxi service for over 11 years. Your satisfaction is our priority.
             </p>
@@ -529,16 +612,16 @@ function Home() {
           <div>
             <h4 style={{ fontSize: '1rem', marginBottom: '1rem', color: '#FFC107' }}>Contact</h4>
             <p style={{ fontSize: '0.9rem', opacity: 0.7, marginBottom: '0.5rem' }}>
-              📞 (555) 123-4567
+              📞 {site.phone.display}
             </p>
             <p style={{ fontSize: '0.9rem', opacity: 0.7, marginBottom: '0.5rem' }}>
-              ✉️ info@ridewithcarlos.com
+              ✉️ {site.email}
             </p>
             <p style={{ fontSize: '0.9rem', opacity: 0.7, marginBottom: '1rem' }}>
-              📍 New York, NY
+              📍 {site.location}
             </p>
             <div style={{ display: 'flex', gap: '1rem' }}>
-              <a href="tel:+15551234567" style={{
+              <a href={siteLinks.phone} style={{
                 backgroundColor: '#FFC107',
                 color: '#0a0a0a',
                 padding: '0.5rem 1rem',
@@ -548,17 +631,6 @@ function Home() {
                 fontWeight: '600'
               }}>
                 Call
-              </a>
-              <a href="https://wa.me/15551234567" target="_blank" rel="noopener noreferrer" style={{
-                backgroundColor: '#25D366',
-                color: 'white',
-                padding: '0.5rem 1rem',
-                borderRadius: '6px',
-                textDecoration: 'none',
-                fontSize: '0.85rem',
-                fontWeight: '600'
-              }}>
-                WhatsApp
               </a>
             </div>
           </div>
@@ -570,7 +642,7 @@ function Home() {
           fontSize: '0.85rem',
           opacity: 0.6
         }}>
-          © 2024 Ride With Carlos. All rights reserved.
+          © {site.year} {site.name}. All rights reserved.
         </div>
       </footer>
     </div>
