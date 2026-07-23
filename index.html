@@ -11,7 +11,17 @@
     <title>Ride With Carlos | Taxi &amp; Airport Service</title>
   </head>
   <body>
-    <form name="booking" netlify netlify-honeypot="bot-field" hidden>
+    <form
+      name="booking"
+      method="POST"
+      data-netlify="true"
+      data-netlify-honeypot="bot-field"
+      netlify
+      netlify-honeypot="bot-field"
+      hidden
+    >
+      <input type="hidden" name="form-name" value="booking" />
+      <input name="bot-field" />
       <input type="text" name="pickup" />
       <input type="text" name="dropoff" />
       <input type="date" name="date" />
