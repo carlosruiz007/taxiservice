@@ -47,26 +47,33 @@ function Home() {
       return;
     }
 
-    if (!import.meta.env.PROD) {
-      setBookingStatus('error');
-      setBookingError('Form submissions are handled on Netlify after you deploy.');
-      return;
-    }
-
     setBookingStatus('loading');
     setBookingError('');
 
-    const formData = new FormData(event.target);
+    const payload = {
+      'form-name': BOOKING_FORM_NAME,
+      'bot-field': '',
+      pickup: trimmedPickup,
+      dropoff: trimmedDropoff,
+      date: bookingForm.date,
+      time: bookingForm.time,
+      phone: trimmedPhone,
+    };
+
+    const body = Object.keys(payload)
+      .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(payload[key])}`)
+      .join('&');
 
     try {
       const response = await fetch('/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(formData).toString(),
+        body,
       });
 
+      // Netlify returns HTML (often the SPA index) with 200 when the form is accepted.
       if (!response.ok) {
-        throw new Error('Submission failed');
+        throw new Error(`Submission failed (${response.status})`);
       }
 
       setBookingForm(initialBookingForm);
@@ -192,8 +199,10 @@ function Home() {
             <form
               name={BOOKING_FORM_NAME}
               method="POST"
+              action="/"
               data-netlify="true"
               data-netlify-honeypot="bot-field"
+              netlify-honeypot="bot-field"
               onSubmit={handleBookingSubmit}
               style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
             >
@@ -381,9 +390,9 @@ function Home() {
             gap: '2rem'
           }}>
             {[
-              { name: '15-Passenger Van', desc: 'Perfect for large groups, airport shuttles, and long-distance trips with plenty of luggage space.', image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?q=80&w=800' },
-              { name: 'Suburban SUV', desc: 'Spacious and comfortable for families or small groups. Ideal for airport transfers and city rides.', image: 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?q=80&w=800' },
-              { name: 'Compact Car', desc: 'Efficient and affordable for solo travelers or couples. Great for quick trips around the city.', image: 'https://images.unsplash.com/photo-1583508915901-b5f84c1dcde1?q=80&w=800' }
+              { name: '15-Passenger Van', desc: 'Perfect for large groups, airport shuttles, and long-distance trips with plenty of luggage space.', image: 'https://images.unsplash.com/photo-1695087006103-29529c69b5fb?q=80&w=800' },
+              { name: 'Suburban SUV', desc: 'Spacious and comfortable for families or small groups. Ideal for airport transfers and city rides.', image: 'https://images.unsplash.com/photo-1758218921385-375f487730bd?q=80&w=800' },
+              { name: 'Compact Car', desc: 'Efficient and affordable for solo travelers or couples. Great for quick trips around the city.', image: 'https://images.unsplash.com/photo-1610470832703-95d40c3fad55?q=80&w=800' }
             ].map((vehicle, i) => (
               <div key={i} style={{
                 backgroundColor: '#f8f8f8',
